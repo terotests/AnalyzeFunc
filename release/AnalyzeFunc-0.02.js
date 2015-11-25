@@ -393,8 +393,8 @@
         var rList = [];
         var collectCtx = function collectCtx(ctx) {
 
-          // possibly error
-          if (ctx.varDefs[currentName]) return;
+          // if the variable has been declared in this scope, it can not be changed
+          if (ctx && ctx.varDefs && ctx.varDefs[currentName]) return;
 
           var rr = ctx.objPropAccess;
           if (rr) rr.forEach(function (pInfo) {
