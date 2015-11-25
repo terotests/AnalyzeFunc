@@ -35,7 +35,7 @@
 
             var extDef = {
               name: keyName,
-              items: rr[keyName]
+              items: ctx.objCalls[keyName]
             };
             rList.push(extDef);
           });
