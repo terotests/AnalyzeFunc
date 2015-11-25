@@ -28,7 +28,8 @@
 
           var rr = Object.keys(ctx.objCalls);
           if (rr) rr.forEach(function (keyName) {
-            if (ctx.varDefs && ctx.varDefs[keyName]) return;
+
+            if (me.definedInCtx(ctx, keyName)) return;
 
             var extDef = {
               name: keyName,
@@ -75,6 +76,19 @@
         collectCtx(ctx);
 
         return objDef;
+      };
+
+      /**
+       * @param Object ctx  - Context
+       * @param String name  - Variable to search for
+       */
+      _myTrait_.definedInCtx = function (ctx, name) {
+
+        if (ctx && ctx.varDefs && ctx.varDefs[name]) return true;
+
+        if (ctx._parentCtx) return this.definedInCtx(ctx._parentCtx, name);
+
+        return false;
       };
 
       if (_myTrait_.__traitInit && !_myTrait_.hasOwnProperty("__traitInit")) _myTrait_.__traitInit = _myTrait_.__traitInit.slice();
