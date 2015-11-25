@@ -101,6 +101,18 @@
           }
         }
 
+        if (node.type == "AssignmentExpression") {
+          if (!ctx.assigments) ctx.assigments = [];
+
+          ctx.assigments.push({
+            left: node.left,
+            right: node.right
+          });
+
+          me.primaWalk(node.left, filter, cb, ctx, visitCnt);
+          me.primaWalk(node.right, filter, cb, ctx, visitCnt);
+        }
+
         if (node.type == "MemberExpression") {
           if (!ctx.objPropAccess) ctx.objPropAccess = [];
           var pp = {
