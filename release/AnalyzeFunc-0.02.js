@@ -145,6 +145,19 @@
         if (node.type == "AssignmentExpression") {
           if (!ctx.assigments) ctx.assigments = [];
 
+          if (node.left.type == "Identified") {
+            var varName = node.left.name;
+            if (ctx.aliases) {
+              ctx.aliases.forEach(function (a) {
+                if (a.alias == varName) {
+                  a.volatile = true;
+                  if (!a.changesAt) a.changesAt = [];
+                  a.changesAt.push(node);
+                }
+              });
+            }
+          }
+
           ctx.assigments.push({
             left: node.left,
             right: node.right
