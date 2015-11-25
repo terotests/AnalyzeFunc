@@ -62,7 +62,7 @@
 
           if (!ctx.objPropAccess) return;
 
-          if (me.definedInCtx(objName)) return;
+          if (me.definedInCtx(ctx, objName)) return;
           // if(subScope && ctx.varDefs && ctx.varDefs[objName]) return;
 
           var rr = ctx.objPropAccess;
