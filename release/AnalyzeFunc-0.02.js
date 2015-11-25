@@ -56,11 +56,13 @@
        */
       _myTrait_.collectObjectStructure = function (ctx, objName) {
         var objDef = {};
+        var me = this;
 
         var collectCtx = function collectCtx(ctx, subScope) {
 
           if (!ctx.objPropAccess) return;
 
+          if (me.definedInCtx(objName)) return;
           // if(subScope && ctx.varDefs && ctx.varDefs[objName]) return;
 
           var rr = ctx.objPropAccess;
