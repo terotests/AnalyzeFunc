@@ -269,10 +269,13 @@
                 type: "this"
               };
               if (!ctx.aliases) ctx.aliases = [];
+              if (!ctx.aliasesOf) ctx.aliasesOf = {};
               ctx.aliases.push({
                 alias: varName,
                 source: "this"
               });
+              if (!ctx.aliasesOf["this"]) ctx.aliasesOf["this"] = {};
+              ctx.aliasesOf["this"][varName] = true;
             }
 
             if (init.type == "Identifier") {
@@ -287,6 +290,9 @@
                   alias: varName,
                   source: init.name
                 });
+                if (!ctx.aliasesOf) ctx.aliasesOf = {};
+                if (!ctx.aliasesOf[init.name]) ctx.aliasesOf[init.name] = {};
+                ctx.aliasesOf[init.name][varName] = true;
               }
               if (dec.init) {
                 me.primaWalk(dec.init, filter, cb, ctx, visitCnt);
