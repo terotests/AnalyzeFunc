@@ -47,11 +47,13 @@
         if (node.type == "Literal") {
           return ctx;
         }
+
         if (node.type == "Identifier") {
-          if (!ctx.identifiers) ctx.identifiers = {};
-          ctx.identifiers[node.name] = {
+          if (!ctx.identifiers) ctx.identifiers = [];
+          ctx.identifiers.push({
+            name: node.name,
             node: node
-          };
+          });
           return ctx;
         }
 
@@ -390,19 +392,31 @@
       _myTrait_.rf_changeParamObj = function (ctx, currentName, newName) {
         var rList = [];
         var collectCtx = function collectCtx(ctx) {
+
+          // possibly error
+          if (ctx.varDefs[currentName]) return;
+
           var rr = ctx.objPropAccess;
           if (rr) rr.forEach(function (pInfo) {
-            if (pInfo.objName == objName1) {
+            if (pInfo.objName == currentName) {
               var objNode = pInfo.node.object;
-              console.log(codeStr.slice(objNode.range[0], objNode.range[1]));
               rList.push({
                 range: objNode.range,
-                newValue: objName2
+                newValue: newName
+              });
+            }
+          });
+          if (ctx.identifiers) ctx.identifiers.forEach(function (pInfo) {
+            if (pInfo.name == currentName) {
+              var objNode = pInfo.node;
+              rList.push({
+                range: objNode.range,
+                newValue: newName
               });
             }
           });
           if (ctx.subCtxList) ctx.subCtxList.forEach(function (c) {
-            if (c.varDefs && c.varDefs[objName1]) return;
+            if (c.varDefs && c.varDefs[currentName]) return;
             collectCtx(c);
           });
         };
