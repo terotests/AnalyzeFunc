@@ -71,7 +71,6 @@
             }
           });
           if (ctx.subCtxList) ctx.subCtxList.forEach(function (c) {
-            if (c.varDefs && c.varDefs[currentName]) return;
             collectCtx(c, true);
           });
         };
