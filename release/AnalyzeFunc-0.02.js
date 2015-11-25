@@ -177,6 +177,16 @@
               };
             }
 
+            if (init.type == "Identifier") {
+              ctx.varDefs[varName] = {
+                node: dec,
+                type: "Identifier"
+              };
+              if (dec.init) {
+                me.primaWalk(dec.init, filter, cb, ctx, visitCnt);
+              }
+            }
+
             if (init.type == "MemberExpression") {
               ctx.varDefs[varName] = {
                 node: dec,
@@ -369,6 +379,41 @@
           });
         }
         return ctx;
+      };
+
+      /**
+       * Replace all occurrences of object to some other name
+       * @param Object ctx  - Context object
+       * @param String currentName  - Current name of the Object
+       * @param String newName  - New name of the object
+       */
+      _myTrait_.rf_changeParamObj = function (ctx, currentName, newName) {
+        var rList = [];
+        var collectCtx = function collectCtx(ctx) {
+          var rr = ctx.objPropAccess;
+          if (rr) rr.forEach(function (pInfo) {
+            if (pInfo.objName == objName1) {
+              var objNode = pInfo.node.object;
+              console.log(codeStr.slice(objNode.range[0], objNode.range[1]));
+              rList.push({
+                range: objNode.range,
+                newValue: objName2
+              });
+            }
+          });
+          if (ctx.subCtxList) ctx.subCtxList.forEach(function (c) {
+            if (c.varDefs && c.varDefs[objName1]) return;
+            collectCtx(c);
+          });
+        };
+        collectCtx(ctx);
+
+        // sort results according the range
+        rList.sort(function (a, b) {
+          return b.range[0] - a.range[0];
+        });
+
+        return rList;
       };
     })(this);
   };
