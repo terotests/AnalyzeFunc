@@ -55,30 +55,22 @@
       _myTrait_.collectObjectStructure = function (ctx, objName) {
         var objDef = {};
 
-        var collectCtx = function collectCtx(ctx) {
+        var collectCtx = function collectCtx(ctx, subScope) {
+
+          if (!ctx.objPropAccess) return;
+
+          if (subScope && ctx.varDefs && ctx.varDefs[objName]) return;
 
           var rr = ctx.objPropAccess;
           if (rr) rr.forEach(function (pInfo) {
-            if (pInfo.objName == currentName) {
-              var objNode = pInfo.node.object;
-              rList.push({
-                range: objNode.range,
-                newValue: newName
-              });
-            }
-          });
-          if (ctx.identifiers) ctx.identifiers.forEach(function (pInfo) {
-            if (pInfo.name == currentName) {
-              var objNode = pInfo.node;
-              rList.push({
-                range: objNode.range,
-                newValue: newName
-              });
+            if (pInfo.objName == objName) {
+              // might search for the type of the property also here...
+              objDef[propName] = true;
             }
           });
           if (ctx.subCtxList) ctx.subCtxList.forEach(function (c) {
             if (c.varDefs && c.varDefs[currentName]) return;
-            collectCtx(c);
+            collectCtx(c, true);
           });
         };
         collectCtx(ctx);
