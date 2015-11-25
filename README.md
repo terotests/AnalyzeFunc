@@ -146,6 +146,18 @@ if(node.type=="FunctionDeclaration") {
     }
 }
 
+if(node.type=="AssignmentExpression") {
+    if(!ctx.assigments) ctx.assigments = [];
+    
+    ctx.assigments.push({
+        left : node.left,
+        right : node.right
+    });
+    
+    me.primaWalk(node.left, filter, cb, ctx, visitCnt)
+    me.primaWalk(node.right, filter, cb, ctx, visitCnt)
+}
+
 if(node.type=="MemberExpression") {
     if(!ctx.objPropAccess) ctx.objPropAccess = [];
     var pp = {
@@ -209,6 +221,16 @@ if(node.type=="VariableDeclaration") {
                 node : dec,
                 type : "this"
             };
+        }
+        
+        if(init.type=="MemberExpression") {
+            ctx.varDefs[varName] = {
+                node : dec,
+                type : "ObjectProperty"
+            };      
+            if(dec.init) {
+                me.primaWalk(dec.init, filter, cb, ctx, visitCnt) 
+            }             
         }
         
         if(init.type=="ObjectExpression") {
