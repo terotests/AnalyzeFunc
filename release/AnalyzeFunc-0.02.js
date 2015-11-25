@@ -16,6 +16,45 @@
 
       // Initialize static variables here...
 
+      /**
+       * Collects Object structure for object for a given parameter name...
+       * @param Object ctx  - Context to use
+       * @param String objName  - Name of the Object variable to look for
+       */
+      _myTrait_.collectObjectStructure = function (ctx, objName) {
+        var objDef = {};
+
+        var collectCtx = function collectCtx(ctx) {
+
+          var rr = ctx.objPropAccess;
+          if (rr) rr.forEach(function (pInfo) {
+            if (pInfo.objName == currentName) {
+              var objNode = pInfo.node.object;
+              rList.push({
+                range: objNode.range,
+                newValue: newName
+              });
+            }
+          });
+          if (ctx.identifiers) ctx.identifiers.forEach(function (pInfo) {
+            if (pInfo.name == currentName) {
+              var objNode = pInfo.node;
+              rList.push({
+                range: objNode.range,
+                newValue: newName
+              });
+            }
+          });
+          if (ctx.subCtxList) ctx.subCtxList.forEach(function (c) {
+            if (c.varDefs && c.varDefs[currentName]) return;
+            collectCtx(c);
+          });
+        };
+        collectCtx(ctx);
+
+        return objDef;
+      };
+
       if (_myTrait_.__traitInit && !_myTrait_.hasOwnProperty("__traitInit")) _myTrait_.__traitInit = _myTrait_.__traitInit.slice();
       if (!_myTrait_.__traitInit) _myTrait_.__traitInit = [];
       _myTrait_.__traitInit.push(function (t) {});
@@ -184,6 +223,14 @@
                 node: dec,
                 type: "Identifier"
               };
+              if (dec.id.type == "Identifier") {
+                // aliases
+                if (!ctx.aliases) ctx.aliases = [];
+                ctx.aliases.push({
+                  alias: varName,
+                  source: init.name
+                });
+              }
               if (dec.init) {
                 me.primaWalk(dec.init, filter, cb, ctx, visitCnt);
               }
