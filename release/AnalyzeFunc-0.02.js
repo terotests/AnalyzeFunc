@@ -61,7 +61,7 @@
 
           if (!ctx.objPropAccess) return;
 
-          if (subScope && ctx.varDefs && ctx.varDefs[objName]) return;
+          // if(subScope && ctx.varDefs && ctx.varDefs[objName]) return;
 
           var rr = ctx.objPropAccess;
           if (rr) rr.forEach(function (pInfo) {
