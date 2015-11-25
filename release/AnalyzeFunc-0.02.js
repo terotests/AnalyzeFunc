@@ -67,7 +67,7 @@
           if (rr) rr.forEach(function (pInfo) {
             if (pInfo.objName == objName) {
               // might search for the type of the property also here...
-              objDef[propName] = true;
+              objDef[pInfo.propName] = true;
             }
           });
           if (ctx.subCtxList) ctx.subCtxList.forEach(function (c) {
