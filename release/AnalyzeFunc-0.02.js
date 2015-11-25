@@ -22,6 +22,8 @@
        */
       _myTrait_.collectExtModules = function (ctx) {
         var rList = [];
+        var me = this;
+
         var collectCtx = function collectCtx(ctx) {
 
           if (!ctx.objCalls) return;
