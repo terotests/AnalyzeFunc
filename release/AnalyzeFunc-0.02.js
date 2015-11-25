@@ -17,6 +17,37 @@
       // Initialize static variables here...
 
       /**
+       * Collects list of external module calls, for example Math.sqrt() or similar calls.
+       * @param Object ctx  - Context
+       */
+      _myTrait_.collectExtModules = function (ctx) {
+        var rList = [];
+        var collectCtx = function collectCtx(ctx) {
+
+          if (!ctx.objCalls) return;
+
+          var rr = Object.keys(ctx.objCalls);
+          if (rr) rr.forEach(function (keyName) {
+            if (ctx.varDefs && ctx.varDefs[keyName]) return;
+
+            var extDef = {
+              name: keyName,
+              items: rr[keyName]
+            };
+            rList.push(extDef);
+          });
+
+          if (ctx.subCtxList) ctx.subCtxList.forEach(function (c) {
+            if (c.varDefs && c.varDefs[currentName]) return;
+            collectCtx(c);
+          });
+        };
+        collectCtx(ctx);
+
+        return rList;
+      };
+
+      /**
        * Collects Object structure for object for a given parameter name...
        * @param Object ctx  - Context to use
        * @param String objName  - Name of the Object variable to look for
