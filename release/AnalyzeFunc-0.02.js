@@ -216,6 +216,11 @@
                 node: dec,
                 type: "this"
               };
+              if (!ctx.aliases) ctx.aliases = [];
+              ctx.aliases.push({
+                alias: varName,
+                source: "this"
+              });
             }
 
             if (init.type == "Identifier") {
