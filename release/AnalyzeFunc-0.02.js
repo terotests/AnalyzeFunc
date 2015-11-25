@@ -145,7 +145,7 @@
         if (node.type == "AssignmentExpression") {
           if (!ctx.assigments) ctx.assigments = [];
 
-          if (node.left.type == "Identified") {
+          if (node.left.type == "Identifier") {
             var varName = node.left.name;
             if (ctx.aliases) {
               ctx.aliases.forEach(function (a) {
