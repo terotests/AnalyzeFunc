@@ -39,8 +39,12 @@ Test usage:
 #### Class AnalyzeFunc
 
 
+- [collectExtModules](README.md#AnalyzeFunc_collectExtModules)
+- [collectObjectStructure](README.md#AnalyzeFunc_collectObjectStructure)
+- [definedInCtx](README.md#AnalyzeFunc_definedInCtx)
 - [localGuid](README.md#AnalyzeFunc_localGuid)
 - [primaWalk](README.md#AnalyzeFunc_primaWalk)
+- [rf_changeParamObj](README.md#AnalyzeFunc_rf_changeParamObj)
 
 
 
@@ -62,6 +66,91 @@ The class has following internal singleton variables:
 * _cnt
         
         
+### <a name="AnalyzeFunc_collectExtModules"></a>AnalyzeFunc::collectExtModules(ctx)
+`ctx` Context
+ 
+
+Collects list of external module calls, for example Math.sqrt() or similar calls.
+```javascript
+var rList = [];
+var me = this;
+
+var collectCtx = function(ctx) {
+    
+    if(!ctx.objCalls) return;
+    
+    var rr = Object.keys( ctx.objCalls );
+    if(rr) rr.forEach( function(keyName) {
+        
+        if(me.definedInCtx( ctx, keyName )) return;
+
+        var extDef = {
+            name : keyName,
+            items : ctx.objCalls[keyName]
+        };
+        rList.push(extDef);
+    })
+
+    if(ctx.subCtxList) ctx.subCtxList.forEach( function(c) {
+        collectCtx(c)
+    })
+}
+collectCtx( ctx );
+
+
+return rList;
+```
+
+### <a name="AnalyzeFunc_collectObjectStructure"></a>AnalyzeFunc::collectObjectStructure(ctx, objName)
+`ctx` Context to use
+ 
+`objName` Name of the Object variable to look for
+ 
+
+Collects Object structure for object for a given parameter name...
+```javascript
+var objDef = {};
+var me = this;
+
+var collectCtx = function(ctx, subScope) {
+    
+    if(!ctx.objPropAccess) return;
+    
+    if(me.definedInCtx(ctx,objName)) return;
+    // if(subScope && ctx.varDefs && ctx.varDefs[objName]) return;
+
+    var rr = ctx.objPropAccess;
+    if(rr) rr.forEach( function(pInfo) {
+        if(pInfo.objName == objName) {
+            // might search for the type of the property also here...
+            objDef[pInfo.propName] = true;
+        }
+    })
+    if(ctx.subCtxList) ctx.subCtxList.forEach( function(c) {
+        collectCtx(c, true)
+    })
+}
+collectCtx( ctx );
+
+return objDef;
+```
+
+### <a name="AnalyzeFunc_definedInCtx"></a>AnalyzeFunc::definedInCtx(ctx, name)
+`ctx` Context
+ 
+`name` Variable to search for
+ 
+
+
+```javascript
+
+if(ctx && ctx.varDefs && ctx.varDefs[name]) return true;
+
+if(ctx._parentCtx) return this.definedInCtx( ctx._parentCtx, name );
+
+return false;
+```
+
 ### AnalyzeFunc::constructor( t )
 
 ```javascript
@@ -92,11 +181,13 @@ node.__didVisit = visitCnt;
 if(node.type=="Literal") {
     return ctx;
 }
+
 if(node.type=="Identifier") {
-    if(!ctx.identifiers) ctx.identifiers = {};
-    ctx.identifiers[node.name] = {
+    if(!ctx.identifiers) ctx.identifiers = [];
+    ctx.identifiers.push({
+        name : node.name,
         node : node
-    }
+    });
     return ctx;
 }
 
@@ -148,6 +239,19 @@ if(node.type=="FunctionDeclaration") {
 
 if(node.type=="AssignmentExpression") {
     if(!ctx.assigments) ctx.assigments = [];
+    
+    if(node.left.type=="Identifier") {
+        var varName = node.left.name;
+        if(ctx.aliases) {
+            ctx.aliases.forEach( function(a) {
+                if(a.alias == varName) {
+                    a.volatile = true;
+                    if(!a.changesAt) a.changesAt = [];
+                    a.changesAt.push(node);
+                }
+            });
+        }
+    }
     
     ctx.assigments.push({
         left : node.left,
@@ -221,7 +325,37 @@ if(node.type=="VariableDeclaration") {
                 node : dec,
                 type : "this"
             };
+            if(!ctx.aliases) ctx.aliases = [];
+            if(!ctx.aliasesOf) ctx.aliasesOf = {};
+            ctx.aliases.push({
+                alias    : varName,
+                source   : "this" 
+            });            
+            if(!ctx.aliasesOf["this"]) ctx.aliasesOf["this"] = {};
+            ctx.aliasesOf["this"][varName] = true;
+            
         }
+
+        if(init.type=="Identifier") {
+            ctx.varDefs[varName] = {
+                node : dec,
+                type : "Identifier"
+            };      
+            if(dec.id.type == "Identifier") {
+                // aliases
+                if(!ctx.aliases) ctx.aliases = [];
+                ctx.aliases.push({
+                    alias    : varName,
+                    source   : init.name 
+                });
+                if(!ctx.aliasesOf) ctx.aliasesOf = {};
+                if(!ctx.aliasesOf[init.name]) ctx.aliasesOf[init.name] = {};
+                ctx.aliasesOf[init.name][varName] = true;                
+            }
+            if(dec.init) {
+                me.primaWalk(dec.init, filter, cb, ctx, visitCnt) 
+            }             
+        }        
         
         if(init.type=="MemberExpression") {
             ctx.varDefs[varName] = {
@@ -422,6 +556,56 @@ if(node._paths) {
 }
 return ctx;
 
+```
+
+### <a name="AnalyzeFunc_rf_changeParamObj"></a>AnalyzeFunc::rf_changeParamObj(ctx, currentName, newName)
+`ctx` Context object
+ 
+`currentName` Current name of the Object
+ 
+`newName` New name of the object
+ 
+
+Replace all occurrences of object to some other name
+```javascript
+var rList = [];
+var collectCtx = function(ctx) {
+    
+    // if the variable has been declared in this scope, it can not be changed
+    if(ctx && ctx.varDefs && ctx.varDefs[currentName]) return;
+    
+    var rr = ctx.objPropAccess;
+    if(rr) rr.forEach( function(pInfo) {
+        if(pInfo.objName == currentName) {
+            var objNode = pInfo.node.object;
+            rList.push({
+                range : objNode.range,
+                newValue : newName
+            })
+        }
+    })
+    if(ctx.identifiers) ctx.identifiers.forEach( function(pInfo) {
+        if(pInfo.name == currentName) {
+            var objNode = pInfo.node;
+            rList.push({
+                range : objNode.range,
+                newValue : newName
+            })
+        }
+    })    
+    if(ctx.subCtxList) ctx.subCtxList.forEach( function(c) {
+        if(c.varDefs && c.varDefs[currentName]) return;
+        collectCtx(c)
+    })
+}
+collectCtx( ctx );
+
+// sort results according the range
+rList.sort( function(a,b) {
+    return b.range[0] - a.range[0]
+})
+
+return rList;
 ```
 
 
