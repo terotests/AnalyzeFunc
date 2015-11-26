@@ -94,6 +94,45 @@
         return false;
       };
 
+      /**
+       * @param Object ctx  - Context
+       * @param String callName  - Function call to search for
+       */
+      _myTrait_.findResultsOfFnCall = function (ctx, callName) {
+
+        var rList = [];
+        var me = this;
+
+        var collectCtx = function collectCtx(ctx, subCtx) {
+
+          if (!ctx.varDefs) return;
+
+          // skip in case subcontext re-defines the function name
+          if (subCtx && ctx.varDefs[callName]) return;
+
+          var rr = Object.keys(ctx.varDefs);
+          if (rr) rr.forEach(function (keyName) {
+
+            var def = ctx.varDefs[keyName];
+            if (def.type == "call") {
+
+              if (callName) {
+                if (def.fnCall && def.fnCall.name == callName) {
+                  rList.push(def);
+                }
+              }
+            }
+          });
+
+          if (ctx.subCtxList) ctx.subCtxList.forEach(function (c) {
+            collectCtx(c, true);
+          });
+        };
+        collectCtx(ctx);
+
+        return rList;
+      };
+
       if (_myTrait_.__traitInit && !_myTrait_.hasOwnProperty("__traitInit")) _myTrait_.__traitInit = _myTrait_.__traitInit.slice();
       if (!_myTrait_.__traitInit) _myTrait_.__traitInit = [];
       _myTrait_.__traitInit.push(function (t) {});
@@ -343,11 +382,28 @@
             }
             if (init.type == "CallExpression") {
               // Might be able to find out what is called
-              ctx.varDefs[varName] = {
+              var cDef = {
                 node: dec,
                 type: "call",
                 init: init
               };
+
+              if (init.callee.name) {
+                cDef.fnCall = {
+                  name: init.callee.name,
+                  node: init.callee
+                };
+              } else {
+                if (init.callee.object && init.callee.property) {
+                  cDef.objCall = {
+                    objName: init.callee.object.name,
+                    propName: init.callee.property.name
+                  };
+                }
+              }
+              cDef.args = init.arguments;
+
+              ctx.varDefs[varName] = cDef;
               if (dec.init) {
                 me.primaWalk(dec.init, filter, cb, ctx, visitCnt);
               }
@@ -442,12 +498,13 @@
               if (!ctx.fnCalls) {
                 ctx.fnCalls = {};
               }
+              if (!ctx.fnCalls[node.callee.name]) ctx.fnCalls[node.callee.name] = [];
               // collect all the calls for some function
-              ctx.fnCalls[node.callee.name] = {
+              ctx.fnCalls[node.callee.name].push({
                 node: node,
                 name: node.callee.name,
                 type: node.callee.type
-              };
+              });
             }
 
             // Walk also arguments, they may have contexts like subfunctions etc.
