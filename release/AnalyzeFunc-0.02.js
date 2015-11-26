@@ -162,6 +162,10 @@
         if (!visitCnt) visitCnt = 1;
         if (!ctx) ctx = {};
 
+        if (filter && node.type) {
+          if (!filter(node)) return;
+        }
+
         if (node.__didVisit == visitCnt) return ctx;
         node.__didVisit = visitCnt;
 
