@@ -298,8 +298,6 @@
             ctx.varDefs = {};
           }
 
-          console.log("Checking variable declaration");
-
           node.declarations.forEach(function (dec) {
             var varName = dec.id.name;
             if (ctx.varDefs[varName]) {
