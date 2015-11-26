@@ -118,7 +118,11 @@
 
               if (callName) {
                 if (def.fnCall && def.fnCall.name == callName) {
-                  rList.push(def);
+                  rList.push({
+                    name: keyName,
+                    varDef: def,
+                    callDef: def.fnCall
+                  });
                 }
               }
             }
